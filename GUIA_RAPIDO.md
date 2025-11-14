@@ -121,9 +121,11 @@ ln -s $(pwd)/dist/BatePonto.app ~/Desktop/BatePonto.app
 
 ## Onde os Dados São Salvos
 
-- **Projetos**: `data/projects.json`
-- **Registros de tempo**: `data/time_entries.json`
-- **Relatórios exportados**: `exports/`
+- **Projetos**: `~/.bateponto/projects.json`
+- **Registros de tempo**: `~/.bateponto/time_entries.json`
+- **Relatórios exportados**: `~/.bateponto/exports/`
+
+Todos os dados ficam no seu diretório home (pasta oculta `.bateponto`).
 
 ## Solução de Problemas
 
@@ -145,5 +147,5 @@ No macOS, conceda permissões em:
 
 1. **Deixe o programa aberto** durante o trabalho para tracking automático
 2. **Pausas automáticas** são registradas após 5 min de inatividade
-3. **Backup**: Os arquivos em `data/` contêm todo seu histórico
+3. **Backup**: Os arquivos em `~/.bateponto/` contêm todo seu histórico
 4. **Cores**: Escolha cores distintas para cada projeto para identificação rápida

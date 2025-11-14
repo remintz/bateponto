@@ -9,10 +9,18 @@ from typing import List, Dict, Any
 class ReportExporter:
     """Handles exporting reports to various formats."""
 
-    def __init__(self, export_dir: str = "exports"):
-        """Initialize exporter with export directory."""
-        self.export_dir = Path(export_dir)
-        self.export_dir.mkdir(exist_ok=True)
+    def __init__(self, export_dir: str = None):
+        """Initialize exporter with export directory.
+
+        If export_dir is None, uses ~/.bateponto/exports as default.
+        """
+        if export_dir is None:
+            # Use home folder by default
+            self.export_dir = Path.home() / ".bateponto" / "exports"
+        else:
+            self.export_dir = Path(export_dir)
+
+        self.export_dir.mkdir(parents=True, exist_ok=True)
 
     def export_summary_to_csv(
         self,

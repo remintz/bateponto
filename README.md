@@ -85,6 +85,7 @@ Após compilar, você pode:
 
 ## Estrutura de Arquivos
 
+### Código-fonte
 ```
 bateponto/
 ├── main.py                 # Ponto de entrada
@@ -96,13 +97,17 @@ bateponto/
 │   ├── main_screen.py     # Tela principal
 │   ├── report_screen.py   # Relatórios
 │   └── config_screen.py   # Configurações
-├── utils/                  # Utilitários
-│   ├── idle_detector.py   # Detecção de inatividade
-│   └── export.py          # Exportação de relatórios
-├── data/                   # Dados (criado automaticamente)
-│   ├── projects.json      # Lista de projetos
-│   └── time_entries.json  # Registros de tempo
-└── exports/                # Relatórios exportados
+└── utils/                  # Utilitários
+    ├── idle_detector.py   # Detecção de inatividade
+    └── export.py          # Exportação de relatórios
+```
+
+### Dados do usuário (criado automaticamente em ~/.bateponto/)
+```
+~/.bateponto/
+├── projects.json          # Lista de projetos
+├── time_entries.json      # Registros de tempo
+└── exports/               # Relatórios exportados
 ```
 
 ## Configuração de Projetos
@@ -124,7 +129,7 @@ bateponto/
 
 ### Via Arquivo JSON (Alternativo)
 
-Edite `data/projects.json` manualmente se preferir:
+Edite `~/.bateponto/projects.json` manualmente se preferir:
 
 ```json
 {
@@ -139,13 +144,15 @@ Edite `data/projects.json` manualmente se preferir:
 }
 ```
 
+**Localização dos dados**: Todos os dados são salvos em `~/.bateponto/` no seu diretório home.
+
 ### Cores disponíveis
 
 - `green`, `blue`, `yellow`, `red`, `magenta`, `cyan`, `white`
 
 ## Formato dos Dados
 
-### Registros de Tempo (`time_entries.json`)
+### Registros de Tempo (`~/.bateponto/time_entries.json`)
 
 ```json
 {
@@ -180,7 +187,7 @@ Configure o tempo em `utils/idle_detector.py` alterando o parâmetro `idle_timeo
 
 ## Exportação de Relatórios
 
-Os relatórios exportados são salvos em `exports/` no formato CSV com:
+Os relatórios exportados são salvos em `~/.bateponto/exports/` no formato CSV com:
 
 - Nome do projeto
 - Horas totais (formato HH:MM)

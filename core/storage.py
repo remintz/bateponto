@@ -10,9 +10,17 @@ from datetime import datetime
 class Storage:
     """Handles data persistence using JSON files."""
 
-    def __init__(self, data_dir: str = "data"):
-        """Initialize storage with data directory."""
-        self.data_dir = Path(data_dir)
+    def __init__(self, data_dir: str = None):
+        """Initialize storage with data directory.
+
+        If data_dir is None, uses ~/.bateponto as default.
+        """
+        if data_dir is None:
+            # Use home folder by default
+            self.data_dir = Path.home() / ".bateponto"
+        else:
+            self.data_dir = Path(data_dir)
+
         self.data_dir.mkdir(exist_ok=True)
 
         self.projects_file = self.data_dir / "projects.json"
