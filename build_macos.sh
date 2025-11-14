@@ -111,7 +111,7 @@ fi
 echo ""
 
 # Compilar com PyInstaller
-echo -e "${BLUE}[6/6]${NC} Compilando aplicação com PyInstaller..."
+echo -e "${BLUE}[6/7]${NC} Compilando aplicação com PyInstaller..."
 pyinstaller --clean --noconfirm bateponto.spec
 
 if [ $? -eq 0 ]; then
@@ -120,6 +120,66 @@ else
     echo -e "${RED}✗${NC} Erro na compilação"
     exit 1
 fi
+echo ""
+
+# Criar .app wrapper que abre no Terminal
+echo -e "${BLUE}[7/7]${NC} Criando .app wrapper..."
+
+# Criar estrutura do .app
+mkdir -p "dist/BatePonto.app/Contents/MacOS"
+mkdir -p "dist/BatePonto.app/Contents/Resources"
+
+# Criar Info.plist
+cat > "dist/BatePonto.app/Contents/Info.plist" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>launcher</string>
+    <key>CFBundleIconFile</key>
+    <string>icon</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.bateponto.app</string>
+    <key>CFBundleName</key>
+    <string>BatePonto</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSUIElement</key>
+    <false/>
+</dict>
+</plist>
+PLIST
+
+# Criar script launcher
+cat > "dist/BatePonto.app/Contents/MacOS/launcher" <<'LAUNCHER'
+#!/bin/bash
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+EXEC_PATH="$DIR/../Resources/bateponto"
+
+osascript <<EOF
+tell application "Terminal"
+    activate
+    do script "clear && '$EXEC_PATH' ; exit"
+end tell
+EOF
+LAUNCHER
+
+chmod +x "dist/BatePonto.app/Contents/MacOS/launcher"
+
+# Mover executável para Resources
+mv dist/bateponto "dist/BatePonto.app/Contents/Resources/"
+
+# Copiar ícone
+if [ -f "assets/icon.icns" ]; then
+    cp assets/icon.icns "dist/BatePonto.app/Contents/Resources/icon.icns"
+fi
+
+echo -e "${GREEN}✓${NC} Wrapper criado"
 echo ""
 
 # Verificar resultado

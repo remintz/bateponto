@@ -42,20 +42,4 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='assets/icon.icns' if os.path.exists('assets/icon.icns') else None,
-)
-
-# macOS App Bundle
-app = BUNDLE(
-    exe,
-    name='BatePonto.app',
-    icon='assets/icon.icns' if os.path.exists('assets/icon.icns') else None,
-    bundle_identifier='com.bateponto.app',
-    info_plist={
-        'NSPrincipalClass': 'NSApplication',
-        'NSAppleScriptEnabled': False,
-        'CFBundleDocumentTypes': [],
-        'NSHighResolutionCapable': True,
-        'LSUIElement': False,
-    },
 )
