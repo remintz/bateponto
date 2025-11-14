@@ -48,18 +48,18 @@ python3 main.py
 ### Configurar Projetos
 
 1. Pressione **C** na tela principal
-2. Edite o arquivo `data/projects.json` manualmente
-3. Reinicie o programa para aplicar mudanças
+2. Use as teclas para gerenciar projetos:
+   - **A**: Adicionar novo projeto
+   - **E**: Editar projeto selecionado
+   - **D**: Deletar projeto
+   - **T**: Ativar/desativar projeto
 
-**Exemplo de projeto:**
-```json
-{
-  "id": "p4",
-  "name": "Meu Novo Projeto",
-  "color": "blue",
-  "active": true
-}
-```
+3. Ao adicionar/editar:
+   - Digite o nome
+   - Use **←→** ou **espaço** para mudar a cor
+   - Use **espaço** para ativar/desativar
+   - **Tab** para próximo campo
+   - **Enter** para salvar
 
 ## Compilar para macOS
 
@@ -88,6 +88,8 @@ ln -s $(pwd)/dist/BatePonto.app ~/Desktop/BatePonto.app
 - ✅ **Pausas automáticas** - após 5 minutos de inatividade
 - ✅ **Persistência automática** - todos os eventos são salvos instantaneamente
 - ✅ **Múltiplas formas de interação** - mouse, teclado, atalhos
+- ✅ **CRUD completo** - adicione, edite e delete projetos pela interface
+- ✅ **Interface compacta** - ocupa mínimo espaço vertical no desktop
 - ✅ **Exportação CSV** - para análise externa
 - ✅ **Interface colorida** - projetos com cores customizáveis
 
@@ -109,8 +111,13 @@ ln -s $(pwd)/dist/BatePonto.app ~/Desktop/BatePonto.app
 
 ### Tela de Configurações
 - **↑↓**: Navegar
+- **A**: Adicionar projeto
+- **E**: Editar projeto
+- **D**: Deletar projeto
 - **T**: Toggle ativo/inativo
-- **ESC/Q**: Voltar
+- **Tab**: Próximo campo (ao editar)
+- **Enter**: Salvar
+- **ESC/Q**: Voltar/Cancelar
 
 ## Onde os Dados São Salvos
 

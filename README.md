@@ -12,6 +12,8 @@ Sistema de controle de horas trabalhadas em projetos com interface TUI (Terminal
 - 📈 **Relatórios detalhados** com períodos customizáveis
 - 📤 **Exportação para CSV** para análise externa
 - 🎨 **Interface colorida** com suporte a temas
+- ✏️ **CRUD completo de projetos** direto na interface (sem editar JSON)
+- 📐 **Interface compacta** que ocupa mínimo espaço no desktop
 
 ## Instalação
 
@@ -73,8 +75,13 @@ Após compilar, você pode:
 ### Tela de Configurações
 
 - **↑↓**: Navegar entre projetos
+- **A**: Adicionar novo projeto
+- **E**: Editar projeto selecionado
+- **D**: Deletar projeto selecionado
 - **T**: Toggle status ativo/inativo do projeto
-- **ESC/Q**: Voltar à tela principal
+- **Tab**: Navegar entre campos (ao editar)
+- **Enter**: Salvar (ao editar)
+- **ESC/Q**: Voltar/Cancelar
 
 ## Estrutura de Arquivos
 
@@ -100,7 +107,24 @@ bateponto/
 
 ## Configuração de Projetos
 
-Edite o arquivo `data/projects.json` para adicionar ou modificar projetos:
+### Via Interface (Recomendado)
+
+1. Pressione **C** na tela principal
+2. Use os comandos:
+   - **A**: Adicionar novo projeto
+   - **E**: Editar projeto existente
+   - **D**: Deletar projeto
+   - **T**: Ativar/desativar projeto
+
+3. Ao adicionar/editar:
+   - Digite o nome do projeto
+   - Use ←→ para escolher a cor
+   - Use espaço para ativar/desativar
+   - **Enter** para salvar
+
+### Via Arquivo JSON (Alternativo)
+
+Edite `data/projects.json` manualmente se preferir:
 
 ```json
 {
@@ -109,12 +133,6 @@ Edite o arquivo `data/projects.json` para adicionar ou modificar projetos:
       "id": "p1",
       "name": "Projeto A",
       "color": "green",
-      "active": true
-    },
-    {
-      "id": "p2",
-      "name": "Projeto B",
-      "color": "blue",
       "active": true
     }
   ]

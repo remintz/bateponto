@@ -197,21 +197,16 @@ class ReportScreen:
                 break
 
     def draw_footer(self):
-        """Draw footer with options."""
+        """Draw compact footer with options."""
         h, w = self.stdscr.getmaxyx()
 
-        shortcuts = [
-            "←→: Mudar período",
-            "E: Exportar CSV",
-            "ESC/Q: Voltar"
-        ]
-
-        line = "  |  ".join(shortcuts)
+        shortcuts = "←→:Período  E:Exportar  ESC:Voltar"
 
         try:
-            self.stdscr.attron(curses.A_REVERSE)
-            self.stdscr.addstr(h - 2, (w - len(line)) // 2, line)
-            self.stdscr.attroff(curses.A_REVERSE)
+            self.stdscr.attron(curses.A_REVERSE | curses.A_DIM)
+            x_pos = max(0, (w - len(shortcuts)) // 2)
+            self.stdscr.addstr(h - 1, x_pos, shortcuts[:w-1])
+            self.stdscr.attroff(curses.A_REVERSE | curses.A_DIM)
         except curses.error:
             pass
 

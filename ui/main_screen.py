@@ -22,11 +22,11 @@ class MainScreen:
         # Color pairs
         self._init_colors()
 
-        # Layout dimensions
-        self.header_height = 5
-        self.footer_height = 3
-        self.button_height = 6
-        self.button_width = 30
+        # Layout dimensions - compacto para minimizar espaço
+        self.header_height = 4  # Reduzido de 5 para 4
+        self.footer_height = 1  # Reduzido de 3 para 1 (apenas linha de status)
+        self.button_height = 5  # Reduzido de 6 para 5
+        self.button_width = 28  # Reduzido de 30 para 28
 
     def _init_colors(self):
         """Initialize color pairs for curses."""
@@ -64,49 +64,47 @@ class MainScreen:
         self.project_times = self.time_tracker.get_all_projects_today(project_ids)
 
     def draw_header(self):
-        """Draw header with title and clock."""
+        """Draw compact header with title and clock."""
         h, w = self.stdscr.getmaxyx()
 
-        # Title
-        title = "BatePonto - Apontamento de Horas"
+        # Title e data/hora na mesma linha para economizar espaço
+        current_time = datetime.now().strftime("%H:%M:%S")
+        current_date = datetime.now().strftime("%d/%m")
+
+        title = "BatePonto"
+        time_str = f"{current_date} {current_time}"
+
+        # Título à esquerda, hora à direita
         if curses.has_colors():
             self.stdscr.attron(curses.color_pair(10) | curses.A_BOLD)
         else:
             self.stdscr.attron(curses.A_BOLD | curses.A_REVERSE)
 
-        self.stdscr.addstr(0, (w - len(title)) // 2, title)
+        self.stdscr.addstr(0, 1, title)
+        self.stdscr.addstr(0, w - len(time_str) - 1, time_str)
 
         if curses.has_colors():
             self.stdscr.attroff(curses.color_pair(10) | curses.A_BOLD)
         else:
             self.stdscr.attroff(curses.A_BOLD | curses.A_REVERSE)
 
-        # Current time
-        current_time = datetime.now().strftime("%H:%M:%S")
-        current_date = datetime.now().strftime("%d/%m/%Y")
-
-        time_str = f"{current_date}  {current_time}"
-        self.stdscr.addstr(2, (w - len(time_str)) // 2, time_str, curses.A_BOLD)
-
-        # Active project timer
+        # Active project timer - compacto em uma linha
         if self.time_tracker.is_tracking():
             elapsed = self.time_tracker.get_current_elapsed()
-            timer_str = f"Tempo atual: {self.time_tracker.format_timedelta(elapsed)}"
+            timer_str = self.time_tracker.format_timedelta(elapsed)
             project_id = self.time_tracker.get_current_project()
             project = self.project_manager.get_project_by_id(project_id)
 
             if project:
-                project_name = project["name"]
-                active_str = f"Projeto ativo: {project_name}"
+                project_name = project["name"][:20]  # Limitar tamanho
+                active_str = f"● {project_name} | {timer_str}"
 
                 if curses.has_colors():
-                    self.stdscr.addstr(3, (w - len(active_str)) // 2, active_str,
+                    self.stdscr.addstr(1, (w - len(active_str)) // 2, active_str,
                                      curses.color_pair(8) | curses.A_BOLD)
                 else:
-                    self.stdscr.addstr(3, (w - len(active_str)) // 2, active_str,
+                    self.stdscr.addstr(1, (w - len(active_str)) // 2, active_str,
                                      curses.A_REVERSE | curses.A_BOLD)
-
-                self.stdscr.addstr(4, (w - len(timer_str)) // 2, timer_str, curses.A_BOLD)
 
     def draw_project_button(self, y: int, x: int, index: int, project: Dict[str, Any]):
         """Draw a project button."""
@@ -150,20 +148,16 @@ class MainScreen:
                 self.stdscr.addstr(y + i, x + width - 1, "│", color)
             self.stdscr.addstr(y + height - 1, x, "└" + "─" * (width - 2) + "┘", color)
 
-            # Project number and name
+            # Project number and name - compacto
             num_str = f"[{index + 1}]"
-            self.stdscr.addstr(y + 1, x + 2, num_str, color | curses.A_BOLD)
+            name = project["name"][:width - 6]
+            header = f"{num_str} {name}"
+            self.stdscr.addstr(y + 1, x + 2, header, color | curses.A_BOLD)
 
-            name = project["name"][:width - 8]
-            self.stdscr.addstr(y + 1, x + 7, name, color | curses.A_BOLD)
-
-            # Status
-            status = "● ATIVO" if is_active else "○ Parado"
-            self.stdscr.addstr(y + 3, x + 2, status, color)
-
-            # Time today
-            time_label = f"Hoje: {time_str}"
-            self.stdscr.addstr(y + 4, x + 2, time_label, color)
+            # Status e tempo na mesma linha
+            status = "●" if is_active else "○"
+            time_label = f"{status} {time_str}"
+            self.stdscr.addstr(y + 3, x + 2, time_label, color)
 
         except curses.error:
             pass  # Ignore if can't draw (terminal too small)
@@ -191,33 +185,27 @@ class MainScreen:
             self.draw_project_button(y, x, i, project)
 
     def draw_footer(self):
-        """Draw footer with keyboard shortcuts."""
+        """Draw footer with compact keyboard shortcuts."""
         h, w = self.stdscr.getmaxyx()
         footer_y = h - self.footer_height
 
-        shortcuts = [
-            "1-5: Projeto",
-            "↑↓: Navegar",
-            "Enter/Space: Toggle",
-            "R: Relatórios",
-            "C: Config",
-            "Q: Sair"
-        ]
-
-        line = "  |  ".join(shortcuts)
+        # Footer compacto: apenas atalhos essenciais
+        shortcuts = "1-5:Projeto  R:Relatórios  C:Config  Q:Sair"
 
         try:
             if curses.has_colors():
-                self.stdscr.attron(curses.color_pair(10))
+                self.stdscr.attron(curses.color_pair(10) | curses.A_DIM)
             else:
-                self.stdscr.attron(curses.A_REVERSE)
+                self.stdscr.attron(curses.A_REVERSE | curses.A_DIM)
 
-            self.stdscr.addstr(footer_y + 1, (w - len(line)) // 2, line)
+            # Centralizar ou alinhar à esquerda se não couber
+            x_pos = max(0, (w - len(shortcuts)) // 2) if len(shortcuts) < w else 0
+            self.stdscr.addstr(footer_y, x_pos, shortcuts[:w-1])
 
             if curses.has_colors():
-                self.stdscr.attroff(curses.color_pair(10))
+                self.stdscr.attroff(curses.color_pair(10) | curses.A_DIM)
             else:
-                self.stdscr.attroff(curses.A_REVERSE)
+                self.stdscr.attroff(curses.A_REVERSE | curses.A_DIM)
         except curses.error:
             pass
 
