@@ -5,6 +5,26 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 
 
+def safe_addstr(stdscr, y: int, x: int, text: str, attr=0, max_width: int = None):
+    """Safely add string to screen with bounds checking."""
+    try:
+        h, w = stdscr.getmaxyx()
+        if y >= h or x >= w or y < 0 or x < 0:
+            return False
+
+        available = w - x - 1
+        if max_width:
+            available = min(available, max_width)
+
+        if available <= 0:
+            return False
+
+        stdscr.addstr(y, x, text[:available], attr)
+        return True
+    except curses.error:
+        return False
+
+
 class ReportScreen:
     """Reports screen with time summaries and export options."""
 
@@ -81,7 +101,8 @@ class ReportScreen:
 
         title = "Relatórios de Horas"
         self.stdscr.attron(curses.A_BOLD | curses.A_REVERSE)
-        self.stdscr.addstr(0, (w - len(title)) // 2, title)
+        x_pos = max(0, (w - len(title)) // 2)
+        safe_addstr(self.stdscr, 0, x_pos, title)
         self.stdscr.attroff(curses.A_BOLD | curses.A_REVERSE)
 
     def draw_period_selector(self):
@@ -89,15 +110,21 @@ class ReportScreen:
         h, w = self.stdscr.getmaxyx()
 
         label = "Período:"
-        self.stdscr.addstr(2, 5, label, curses.A_BOLD)
+        safe_addstr(self.stdscr, 2, 5, label, curses.A_BOLD)
 
         x = 15
         for i, (period_name, _) in enumerate(self.period_options):
-            if i == self.selected_period:
-                self.stdscr.addstr(2, x, f"[{period_name}]", curses.A_REVERSE | curses.A_BOLD)
-            else:
-                self.stdscr.addstr(2, x, f" {period_name} ")
+            if x >= w - 2:
+                break
 
+            if i == self.selected_period:
+                text = f"[{period_name}]"
+                attr = curses.A_REVERSE | curses.A_BOLD
+            else:
+                text = f" {period_name} "
+                attr = curses.A_NORMAL
+
+            safe_addstr(self.stdscr, 2, x, text, attr)
             x += len(period_name) + 4
 
     def draw_summary_table(self):
@@ -107,44 +134,47 @@ class ReportScreen:
         start_y = 5
         start_x = 5
 
+        # Verificar se tem espaço suficiente
+        min_width = 60
+        if w < min_width or h < 10:
+            msg = "Terminal muito pequeno para relatórios"
+            safe_addstr(self.stdscr, h // 2, max(0, (w - len(msg)) // 2), msg)
+            return
+
         # Table header
-        self.stdscr.addstr(start_y, start_x, "┌" + "─" * 40 + "┬" + "─" * 15 + "┐")
-        self.stdscr.addstr(start_y + 1, start_x, "│ Projeto" + " " * 32 + "│ Horas Totais  │")
-        self.stdscr.addstr(start_y + 2, start_x, "├" + "─" * 40 + "┼" + "─" * 15 + "┤")
+        safe_addstr(self.stdscr, start_y, start_x, "┌" + "─" * 40 + "┬" + "─" * 15 + "┐")
+        safe_addstr(self.stdscr, start_y + 1, start_x, "│ Projeto" + " " * 32 + "│ Horas Totais  │")
+        safe_addstr(self.stdscr, start_y + 2, start_x, "├" + "─" * 40 + "┼" + "─" * 15 + "┤")
 
         # Data rows
         row = start_y + 3
         total_hours = 0.0
 
         for item in self.summary_data:
-            if row >= h - 8:  # Leave space for footer
+            if row >= h - 8:
                 break
 
             project_name = item["project_name"][:38]
             hours = item["total_hours"]
             total_hours += hours
 
-            # Format hours as HH:MM
             hours_str = f"{int(hours):02d}:{int((hours % 1) * 60):02d}"
-
-            try:
-                self.stdscr.addstr(row, start_x, f"│ {project_name:<38} │ {hours_str:>13} │")
-                row += 1
-            except curses.error:
-                break
+            safe_addstr(self.stdscr, row, start_x, f"│ {project_name:<38} │ {hours_str:>13} │")
+            row += 1
 
         # Bottom border
         if row < h - 6:
-            self.stdscr.addstr(row, start_x, "├" + "─" * 40 + "┼" + "─" * 15 + "┤")
+            safe_addstr(self.stdscr, row, start_x, "├" + "─" * 40 + "┼" + "─" * 15 + "┤")
             row += 1
 
             # Total
             total_str = f"{int(total_hours):02d}:{int((total_hours % 1) * 60):02d}"
-            self.stdscr.addstr(row, start_x, f"│ TOTAL" + " " * 33 + f"│ {total_str:>13} │",
-                             curses.A_BOLD)
+            safe_addstr(self.stdscr, row, start_x,
+                       f"│ TOTAL" + " " * 33 + f"│ {total_str:>13} │",
+                       curses.A_BOLD)
             row += 1
 
-            self.stdscr.addstr(row, start_x, "└" + "─" * 40 + "┴" + "─" * 15 + "┘")
+            safe_addstr(self.stdscr, row, start_x, "└" + "─" * 40 + "┴" + "─" * 15 + "┘")
 
     def draw_bar_chart(self):
         """Draw simple ASCII bar chart."""
@@ -154,13 +184,13 @@ class ReportScreen:
             return
 
         start_y = h - 15
-        if start_y < 15:
+        if start_y < 15 or w < 70:
             return
 
         start_x = 5
 
         # Title
-        self.stdscr.addstr(start_y, start_x, "Distribuição de Horas:", curses.A_BOLD)
+        safe_addstr(self.stdscr, start_y, start_x, "Distribuição de Horas:", curses.A_BOLD)
         start_y += 2
 
         # Find max hours for scaling
@@ -168,7 +198,7 @@ class ReportScreen:
         if max_hours == 0:
             return
 
-        max_bar_width = 40
+        max_bar_width = min(40, w - start_x - 30)
 
         for item in self.summary_data[:5]:  # Show top 5
             if start_y >= h - 5:
@@ -181,20 +211,20 @@ class ReportScreen:
             bar_width = int((hours / max_hours) * max_bar_width)
             bar = "█" * bar_width
 
-            # Display
-            try:
-                self.stdscr.addstr(start_y, start_x, f"{project_name:<20} ")
-                if curses.has_colors():
-                    self.stdscr.addstr(start_y, start_x + 21, bar, curses.color_pair(2))
-                else:
-                    self.stdscr.addstr(start_y, start_x + 21, bar)
+            # Nome do projeto
+            safe_addstr(self.stdscr, start_y, start_x, f"{project_name:<20} ")
 
-                hours_str = f" {hours:.1f}h"
-                self.stdscr.addstr(start_y, start_x + 21 + bar_width + 1, hours_str)
+            # Barra
+            if curses.has_colors():
+                safe_addstr(self.stdscr, start_y, start_x + 21, bar, curses.color_pair(2))
+            else:
+                safe_addstr(self.stdscr, start_y, start_x + 21, bar)
 
-                start_y += 1
-            except curses.error:
-                break
+            # Horas
+            hours_str = f" {hours:.1f}h"
+            safe_addstr(self.stdscr, start_y, start_x + 21 + bar_width + 1, hours_str)
+
+            start_y += 1
 
     def draw_footer(self):
         """Draw compact footer with options."""
@@ -202,13 +232,10 @@ class ReportScreen:
 
         shortcuts = "←→:Período  E:Exportar  ESC:Voltar"
 
-        try:
-            self.stdscr.attron(curses.A_REVERSE | curses.A_DIM)
-            x_pos = max(0, (w - len(shortcuts)) // 2)
-            self.stdscr.addstr(h - 1, x_pos, shortcuts[:w-1])
-            self.stdscr.attroff(curses.A_REVERSE | curses.A_DIM)
-        except curses.error:
-            pass
+        self.stdscr.attron(curses.A_REVERSE | curses.A_DIM)
+        x_pos = max(0, (w - len(shortcuts)) // 2)
+        safe_addstr(self.stdscr, h - 1, x_pos, shortcuts)
+        self.stdscr.attroff(curses.A_REVERSE | curses.A_DIM)
 
     def render(self):
         """Render the report screen."""

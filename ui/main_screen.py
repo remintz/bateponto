@@ -5,6 +5,27 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional, Tuple
 
 
+def safe_addstr(stdscr, y: int, x: int, text: str, attr=0, max_width: int = None):
+    """Safely add string to screen with bounds checking."""
+    try:
+        h, w = stdscr.getmaxyx()
+        if y >= h or x >= w or y < 0 or x < 0:
+            return False
+
+        # Limitar texto ao espaço disponível
+        available = w - x - 1
+        if max_width:
+            available = min(available, max_width)
+
+        if available <= 0:
+            return False
+
+        stdscr.addstr(y, x, text[:available], attr)
+        return True
+    except curses.error:
+        return False
+
+
 class MainScreen:
     """Main screen with clock, timer, and project buttons."""
 
@@ -80,8 +101,9 @@ class MainScreen:
         else:
             self.stdscr.attron(curses.A_BOLD | curses.A_REVERSE)
 
-        self.stdscr.addstr(0, 1, title)
-        self.stdscr.addstr(0, w - len(time_str) - 1, time_str)
+        safe_addstr(self.stdscr, 0, 1, title)
+        if w > len(time_str) + 1:
+            safe_addstr(self.stdscr, 0, w - len(time_str) - 1, time_str)
 
         if curses.has_colors():
             self.stdscr.attroff(curses.color_pair(10) | curses.A_BOLD)
@@ -99,12 +121,13 @@ class MainScreen:
                 project_name = project["name"][:20]  # Limitar tamanho
                 active_str = f"● {project_name} | {timer_str}"
 
+                x_pos = max(0, (w - len(active_str)) // 2)
                 if curses.has_colors():
-                    self.stdscr.addstr(1, (w - len(active_str)) // 2, active_str,
-                                     curses.color_pair(8) | curses.A_BOLD)
+                    safe_addstr(self.stdscr, 1, x_pos, active_str,
+                              curses.color_pair(8) | curses.A_BOLD)
                 else:
-                    self.stdscr.addstr(1, (w - len(active_str)) // 2, active_str,
-                                     curses.A_REVERSE | curses.A_BOLD)
+                    safe_addstr(self.stdscr, 1, x_pos, active_str,
+                              curses.A_REVERSE | curses.A_BOLD)
 
     def draw_project_button(self, y: int, x: int, index: int, project: Dict[str, Any]):
         """Draw a project button."""
@@ -192,22 +215,19 @@ class MainScreen:
         # Footer compacto: apenas atalhos essenciais
         shortcuts = "1-5:Projeto  R:Relatórios  C:Config  Q:Sair"
 
-        try:
-            if curses.has_colors():
-                self.stdscr.attron(curses.color_pair(10) | curses.A_DIM)
-            else:
-                self.stdscr.attron(curses.A_REVERSE | curses.A_DIM)
+        if curses.has_colors():
+            self.stdscr.attron(curses.color_pair(10) | curses.A_DIM)
+        else:
+            self.stdscr.attron(curses.A_REVERSE | curses.A_DIM)
 
-            # Centralizar ou alinhar à esquerda se não couber
-            x_pos = max(0, (w - len(shortcuts)) // 2) if len(shortcuts) < w else 0
-            self.stdscr.addstr(footer_y, x_pos, shortcuts[:w-1])
+        # Centralizar ou alinhar à esquerda se não couber
+        x_pos = max(0, (w - len(shortcuts)) // 2) if len(shortcuts) < w else 0
+        safe_addstr(self.stdscr, footer_y, x_pos, shortcuts)
 
-            if curses.has_colors():
-                self.stdscr.attroff(curses.color_pair(10) | curses.A_DIM)
-            else:
-                self.stdscr.attroff(curses.A_REVERSE | curses.A_DIM)
-        except curses.error:
-            pass
+        if curses.has_colors():
+            self.stdscr.attroff(curses.color_pair(10) | curses.A_DIM)
+        else:
+            self.stdscr.attroff(curses.A_REVERSE | curses.A_DIM)
 
     def render(self):
         """Render the entire screen."""
