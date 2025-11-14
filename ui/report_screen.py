@@ -170,7 +170,7 @@ class ReportScreen:
             # Total
             total_str = f"{int(total_hours):02d}:{int((total_hours % 1) * 60):02d}"
             safe_addstr(self.stdscr, row, start_x,
-                       f"│ TOTAL" + " " * 33 + f"│ {total_str:>13} │",
+                       f"│ {'TOTAL':<38} │ {total_str:>13} │",
                        curses.A_BOLD)
             row += 1
 
