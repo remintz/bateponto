@@ -5,6 +5,7 @@ import curses
 import sys
 import time
 from pathlib import Path
+from typing import Optional
 
 from core.storage import Storage
 from core.project_manager import ProjectManager
@@ -15,6 +16,7 @@ from utils.export import ReportExporter
 from ui.main_screen import MainScreen
 from ui.report_screen import ReportScreen
 from ui.config_screen import ConfigScreen
+from ui.adjustment_screen import AdjustmentScreen
 
 
 class BatePontoApp:
@@ -42,6 +44,7 @@ class BatePontoApp:
         self.main_screen = MainScreen(stdscr, self.project_manager, self.time_tracker)
         self.report_screen = ReportScreen(stdscr, self.project_manager, self.time_tracker, self.exporter)
         self.config_screen = ConfigScreen(stdscr, self.project_manager, self.storage)
+        self.adjustment_screen = AdjustmentScreen(stdscr, self.project_manager, self.time_tracker)
 
         # Configure curses
         curses.curs_set(0)  # Hide cursor
@@ -54,8 +57,8 @@ class BatePontoApp:
 
     def _on_active(self):
         """Called when user becomes active after being idle."""
-        # Could show a dialog asking if user wants to continue
-        pass
+        # Automatically resume the paused project
+        self.time_tracker.resume_paused_project()
 
     def run(self):
         """Main application loop."""
@@ -70,6 +73,8 @@ class BatePontoApp:
                         self.current_screen = 'reports'
                     elif action == 'config':
                         self.current_screen = 'config'
+                    elif action == 'adjustments':
+                        self.current_screen = 'adjustments'
                     elif action == 'quit':
                         self._quit_app()
 
@@ -86,6 +91,14 @@ class BatePontoApp:
 
                     if action == 'back':
                         self.current_screen = 'main'
+
+                elif self.current_screen == "adjustments":
+                    self.adjustment_screen.render()
+                    action = self._handle_adjustment_screen()
+
+                    if action == 'main':
+                        self.current_screen = 'main'
+                        self.main_screen.refresh_projects()
 
                 # Small delay to prevent high CPU usage
                 time.sleep(0.01)
@@ -138,6 +151,20 @@ class BatePontoApp:
 
         except curses.error:
             return None
+
+    def _handle_adjustment_screen(self) -> Optional[str]:
+        """Handle adjustment screen input."""
+        try:
+            key = self.stdscr.getch()
+
+            if key != -1:  # If a key was pressed
+                action = self.adjustment_screen.handle_key(key)
+                return action
+
+        except Exception:
+            pass
+
+        return None
 
     def _quit_app(self):
         """Quit the application."""

@@ -213,7 +213,7 @@ class MainScreen:
         footer_y = h - self.footer_height
 
         # Footer compacto: apenas atalhos essenciais
-        shortcuts = "1-5:Projeto  R:Relatórios  C:Config  Q:Sair"
+        shortcuts = "1-5:Projeto  R:Relatórios  A:Ajustes  C:Config  Q:Sair"
 
         if curses.has_colors():
             self.stdscr.attron(curses.color_pair(10) | curses.A_DIM)
@@ -272,6 +272,9 @@ class MainScreen:
 
         elif key in [ord('c'), ord('C')]:
             return 'config'
+
+        elif key in [ord('a'), ord('A')]:
+            return 'adjustments'
 
         elif key in [ord('q'), ord('Q')]:
             return 'quit'

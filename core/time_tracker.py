@@ -14,6 +14,8 @@ class TimeTracker:
         self.current_project: Optional[str] = None
         self.current_start: Optional[datetime] = None
         self.current_elapsed: timedelta = timedelta()
+        self.paused_project: Optional[str] = None  # Store auto-paused project
+        self.pause_start: Optional[datetime] = None  # When pause started
 
     def start_project(self, project_id: str) -> bool:
         """Start tracking time for a project."""
@@ -62,9 +64,80 @@ class TimeTracker:
     def pause_project(self) -> bool:
         """Pause current project (auto-pause)."""
         if self.current_project:
+            # Store which project was paused and when
+            self.paused_project = self.current_project
+            self.pause_start = datetime.now()
+            
             self.stop_project(auto_pause=True)
             return True
         return False
+
+    def resume_paused_project(self) -> bool:
+        """Resume a project that was auto-paused.
+        
+        Returns:
+            True if a project was resumed, False otherwise
+        """
+        if not self.paused_project or not self.pause_start:
+            return False
+        
+        project_id = self.paused_project
+        pause_start = self.pause_start
+        pause_end = datetime.now()
+        
+        # Clear paused state
+        self.paused_project = None
+        self.pause_start = None
+        
+        # Record pause duration as a negative adjustment
+        pause_duration = pause_end - pause_start
+        pause_minutes = int(pause_duration.total_seconds() / 60)
+        
+        if pause_minutes > 0:  # Only record if pause was at least 1 minute
+            self.storage.add_entry({
+                "project_id": project_id,
+                "event": "pause_adjustment",
+                "timestamp": pause_end,
+                "minutes": -pause_minutes,  # Negative to subtract from total time
+                "description": f"Pausa automática por inatividade ({pause_minutes} min)",
+                "auto_pause": True
+            })
+        
+        # Resume the project
+        return self.start_project(project_id)
+
+    def add_adjustment(
+        self, 
+        project_id: str, 
+        minutes: int, 
+        description: str = "",
+        date: Optional[datetime] = None
+    ) -> bool:
+        """Add a time adjustment (positive or negative) to a project.
+        
+        Args:
+            project_id: ID of the project
+            minutes: Number of minutes to adjust (positive or negative)
+            description: Optional description/reason for the adjustment
+            date: Optional date for the adjustment (defaults to now)
+        
+        Returns:
+            True if successful
+        """
+        if date is None:
+            date = datetime.now()
+        
+        # Record adjustment event
+        self.storage.add_entry({
+            "project_id": project_id,
+            "event": "adjustment",
+            "timestamp": date,
+            "minutes": minutes,
+            "description": description,
+            "auto_pause": False
+        })
+        
+        return True
 
     def get_current_elapsed(self) -> timedelta:
         """Get elapsed time for current project."""
@@ -105,6 +178,10 @@ class TimeTracker:
             elif entry["event"] in ["stop", "auto_pause"] and last_start:
                 total_time += timestamp - last_start
                 last_start = None
+            elif entry["event"] in ["adjustment", "pause_adjustment"]:
+                # Add or subtract adjustment time
+                adjustment_minutes = entry.get("minutes", 0)
+                total_time += timedelta(minutes=adjustment_minutes)
 
         # If project is still running and it's the current project
         if last_start and self.current_project == project_id:

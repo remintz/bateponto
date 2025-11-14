@@ -33,6 +33,21 @@ python3 main.py
    - Pressione a tecla correspondente (1-5), ou
    - Pressione **P** para pausar
 
+### Ajustar Horas
+
+1. Pressione **A** na tela principal para abrir a tela de ajustes
+2. Use **↑↓** para selecionar o projeto
+3. Pressione **M** para inserir os minutos (positivo ou negativo):
+   - Valores positivos: horas extras, tempo adicional
+   - Valores negativos: descontos, correções
+4. Pressione **D** para adicionar descrição (opcional)
+5. Pressione **S** para salvar o ajuste
+6. Pressione **ESC** para voltar
+
+**Exemplos:**
+- Adicionar 30 minutos de horas extras: `+30`
+- Descontar 15 minutos de pausa: `-15`
+
 ### Visualizar Relatórios
 
 1. Pressione **R** na tela principal
@@ -85,7 +100,11 @@ ln -s $(pwd)/dist/BatePonto.app ~/Desktop/BatePonto.app
 
 - ✅ **Apenas um projeto ativo por vez** - automático
 - ✅ **Timer em tempo real** - atualizado a cada segundo
-- ✅ **Pausas automáticas** - após 5 minutos de inatividade
+- ✅ **Pausas automáticas inteligentes** - após 5 minutos de inatividade
+  - Pausa registrada automaticamente
+  - Retomada automática ao voltar à atividade
+  - Tempo de pausa descontado do total
+- ✅ **Ajustes de tempo** - adicione horas extras ou descontos manualmente
 - ✅ **Persistência automática** - todos os eventos são salvos instantaneamente
 - ✅ **Múltiplas formas de interação** - mouse, teclado, atalhos
 - ✅ **CRUD completo** - adicione, edite e delete projetos pela interface
@@ -101,6 +120,7 @@ ln -s $(pwd)/dist/BatePonto.app ~/Desktop/BatePonto.app
 - **Enter/Space**: Toggle projeto selecionado
 - **P**: Pausar projeto atual
 - **R**: Abrir relatórios
+- **A**: Ajustes de tempo
 - **C**: Configurações
 - **Q**: Sair
 
@@ -108,6 +128,13 @@ ln -s $(pwd)/dist/BatePonto.app ~/Desktop/BatePonto.app
 - **←→**: Mudar período
 - **E**: Exportar CSV
 - **ESC/Q**: Voltar
+
+### Tela de Ajustes
+- **↑↓**: Selecionar projeto
+- **M**: Inserir minutos
+- **D**: Adicionar descrição
+- **S**: Salvar ajuste
+- **ESC**: Voltar
 
 ### Tela de Configurações
 - **↑↓**: Navegar
@@ -146,6 +173,9 @@ No macOS, conceda permissões em:
 ## Dicas
 
 1. **Deixe o programa aberto** durante o trabalho para tracking automático
-2. **Pausas automáticas** são registradas após 5 min de inatividade
+2. **Pausas automáticas inteligentes**:
+   - Após 5 minutos de inatividade, o projeto é pausado automaticamente
+   - Ao voltar à atividade (mover mouse, digitar), o projeto retoma automaticamente
+   - O tempo de pausa é registrado e descontado do total
 3. **Backup**: Os arquivos em `~/.bateponto/` contêm todo seu histórico
 4. **Cores**: Escolha cores distintas para cada projeto para identificação rápida
