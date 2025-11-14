@@ -1,0 +1,166 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║                    BATEPONTO - COMO USAR                             ║
+║              Sistema de Apontamento de Horas                         ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════════════
+ INÍCIO RÁPIDO
+═══════════════════════════════════════════════════════════════════════
+
+1. INSTALAR DEPENDÊNCIAS:
+   $ pip install -r requirements.txt
+
+2. EXECUTAR:
+   $ python3 main.py
+
+═══════════════════════════════════════════════════════════════════════
+ COMO FUNCIONA
+═══════════════════════════════════════════════════════════════════════
+
+→ IMPORTANTE: Apenas UM projeto pode estar ativo por vez!
+
+  • Ao iniciar um projeto, o anterior para AUTOMATICAMENTE
+  • O projeto ativo aparece em verde com "● ATIVO"
+  • Todos os eventos são salvos instantaneamente
+
+═══════════════════════════════════════════════════════════════════════
+ CONTROLES PRINCIPAIS
+═══════════════════════════════════════════════════════════════════════
+
+TELA PRINCIPAL:
+  [1-5]         → Iniciar/Parar projeto
+  [↑] [↓]       → Navegar entre projetos
+  [Enter]       → Toggle projeto selecionado
+  [Mouse]       → Clicar nos painéis
+  [P]           → Pausar projeto atual
+  [R]           → Ver relatórios
+  [C]           → Configurações
+  [Q]           → Sair
+
+TELA DE RELATÓRIOS:
+  [←] [→]       → Mudar período
+  [E]           → Exportar CSV
+  [ESC] [Q]     → Voltar
+
+═══════════════════════════════════════════════════════════════════════
+ EXEMPLOS DE USO
+═══════════════════════════════════════════════════════════════════════
+
+EXEMPLO 1: Começar a trabalhar
+  1. Abra o programa: python3 main.py
+  2. Pressione [1] para Projeto A
+  3. Timer começa a contar → "● ATIVO"
+
+EXEMPLO 2: Trocar de projeto
+  1. Projeto A está ativo
+  2. Pressione [2] para Projeto B
+  3. Projeto A para AUTOMATICAMENTE
+  4. Projeto B inicia → agora "● ATIVO"
+
+EXEMPLO 3: Pausar para almoço
+  1. Pressione [P] ou clique no projeto ativo
+  2. Timer para, tempo é salvo
+  3. Para retomar: pressione [1-5] novamente
+
+EXEMPLO 4: Ver relatório do dia
+  1. Pressione [R]
+  2. Veja total de horas por projeto
+  3. Pressione [E] para exportar CSV
+
+═══════════════════════════════════════════════════════════════════════
+ COMPILAR PARA macOS
+═══════════════════════════════════════════════════════════════════════
+
+GERAR EXECUTÁVEL:
+  $ ./build_macos.sh
+
+INSTALAR:
+  $ cp -r dist/BatePonto.app /Applications/
+
+CRIAR ATALHO NO DESKTOP:
+  $ ln -s $(pwd)/dist/BatePonto.app ~/Desktop/BatePonto.app
+
+Depois é só dar duplo clique no ícone!
+
+═══════════════════════════════════════════════════════════════════════
+ RECURSOS
+═══════════════════════════════════════════════════════════════════════
+
+✓ Apenas um projeto ativo por vez (automático)
+✓ Timer em tempo real
+✓ Pausas automáticas após 5 min de inatividade
+✓ Salvamento automático e instantâneo
+✓ Múltiplas formas de controle (mouse/teclado/atalhos)
+✓ Relatórios com múltiplos períodos
+✓ Exportação para CSV
+✓ Interface colorida e intuitiva
+✓ Executável standalone para macOS
+
+═══════════════════════════════════════════════════════════════════════
+ ARQUIVOS DE DADOS
+═══════════════════════════════════════════════════════════════════════
+
+data/projects.json      → Lista de projetos (editável)
+data/time_entries.json  → Registros de tempo (automático)
+exports/                → Relatórios CSV exportados
+
+═══════════════════════════════════════════════════════════════════════
+ PERSONALIZAR PROJETOS
+═══════════════════════════════════════════════════════════════════════
+
+Edite: data/projects.json
+
+Exemplo:
+{
+  "projects": [
+    {
+      "id": "p1",
+      "name": "Cliente XYZ",
+      "color": "green",
+      "active": true
+    },
+    {
+      "id": "p2",
+      "name": "Projeto Interno",
+      "color": "blue",
+      "active": true
+    }
+  ]
+}
+
+Cores: green, blue, yellow, red, magenta, cyan, white
+
+═══════════════════════════════════════════════════════════════════════
+ DÚVIDAS FREQUENTES
+═══════════════════════════════════════════════════════════════════════
+
+P: Posso ter 2 projetos ativos ao mesmo tempo?
+R: NÃO. Apenas um por vez. Ao iniciar outro, o atual para.
+
+P: Os dados são salvos automaticamente?
+R: SIM. Cada evento é salvo instantaneamente.
+
+P: Como faço backup?
+R: Copie a pasta 'data/' - ela tem todo o histórico.
+
+P: O que acontece se fechar sem parar o projeto?
+R: O programa pergunta se quer parar antes de sair.
+
+P: Como exporto para Excel?
+R: Pressione [R] depois [E] para exportar CSV.
+   Abra o CSV no Excel ou Google Sheets.
+
+═══════════════════════════════════════════════════════════════════════
+ DOCUMENTAÇÃO COMPLETA
+═══════════════════════════════════════════════════════════════════════
+
+README.md          → Documentação completa
+GUIA_RAPIDO.md     → Guia de início rápido
+DEMO.md            → Demonstração visual e exemplos
+
+═══════════════════════════════════════════════════════════════════════
+ SUPORTE
+═══════════════════════════════════════════════════════════════════════
+
+Desenvolvido com Claude Code
+Licença: MIT
