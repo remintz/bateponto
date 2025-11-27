@@ -10,7 +10,7 @@ from typing import Optional
 from core.storage import Storage
 from core.project_manager import ProjectManager
 from core.time_tracker import TimeTracker
-from utils.idle_detector import IdleDetector
+from utils.idle_detector import SleepDetector
 from utils.export import ReportExporter
 
 from ui.main_screen import MainScreen
@@ -34,11 +34,10 @@ class BatePontoApp:
         self.time_tracker = TimeTracker(self.storage)
         self.exporter = ReportExporter()
 
-        # Initialize idle detector
-        self.idle_detector = IdleDetector(idle_timeout_minutes=5)
-        self.idle_detector.set_idle_callback(self._on_idle)
-        self.idle_detector.set_active_callback(self._on_active)
-        self.idle_detector.start()
+        # Initialize sleep detector (detects when system wakes from sleep)
+        self.sleep_detector = SleepDetector(sleep_threshold_minutes=5)
+        self.sleep_detector.set_sleep_callback(self._on_sleep)
+        self.sleep_detector.start()
 
         # Initialize screens
         self.main_screen = MainScreen(stdscr, self.project_manager, self.time_tracker)
@@ -48,17 +47,12 @@ class BatePontoApp:
 
         # Configure curses
         curses.curs_set(0)  # Hide cursor
-        self.stdscr.timeout(100)  # Non-blocking input with 100ms timeout
+        self.stdscr.timeout(100)  # Non-blocking input with 100ms timeout  # Non-blocking input with 100ms timeout
 
-    def _on_idle(self):
-        """Called when user becomes idle."""
+    def _on_sleep(self):
+        """Called when system wakes from sleep."""
         if self.time_tracker.is_tracking():
             self.time_tracker.pause_project()
-
-    def _on_active(self):
-        """Called when user becomes active after being idle."""
-        # Automatically resume the paused project
-        self.time_tracker.resume_paused_project()
 
     def run(self):
         """Main application loop."""
@@ -200,8 +194,8 @@ class BatePontoApp:
 
     def _cleanup(self):
         """Clean up resources."""
-        # Stop idle detector
-        self.idle_detector.stop()
+        # Stop sleep detector
+        self.sleep_detector.stop()
 
         # Stop any running project
         if self.time_tracker.is_tracking():
