@@ -49,8 +49,31 @@ class IdleDetector:
         self._on_activity()
 
     def _check_idle(self):
-        """Check if user has been idle."""
+        """Check if user has been idle or if system was sleeping."""
+        last_check = datetime.now()
+        
         while self.running:
+            now = datetime.now()
+            time_since_last_check = (now - last_check).total_seconds()
+            
+            # If more than 5 seconds passed since last check, system was probably sleeping
+            # Normal check interval is 1 second, so anything over 3-5 seconds is suspicious
+            if time_since_last_check > 5:
+                with self.lock:
+                    # System woke up from sleep - treat this as idle time
+                    if not self.is_idle and self.on_idle_callback:
+                        # Calculate how long the system was sleeping
+                        sleep_duration = timedelta(seconds=time_since_last_check)
+                        
+                        # If sleep duration exceeds idle timeout, trigger idle
+                        if sleep_duration >= self.idle_timeout:
+                            self.is_idle = True
+                            # Update last_activity to when sleep started (approximately)
+                            self.last_activity = last_check
+                            self.on_idle_callback()
+            
+            last_check = now
+            
             with self.lock:
                 elapsed = datetime.now() - self.last_activity
 
@@ -59,7 +82,7 @@ class IdleDetector:
                     if self.on_idle_callback:
                         self.on_idle_callback()
 
-            time.sleep(1)  # Check every second
+            time.sleep(1)  # Check every second  # Check every second
 
     def start(self):
         """Start monitoring for idle state."""

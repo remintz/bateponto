@@ -68,6 +68,7 @@ class MainScreen:
             curses.init_pair(8, curses.COLOR_BLACK, curses.COLOR_GREEN)   # Active project
             curses.init_pair(9, curses.COLOR_WHITE, curses.COLOR_BLUE)    # Selected
             curses.init_pair(10, curses.COLOR_BLACK, curses.COLOR_WHITE)  # Header
+            curses.init_pair(11, curses.COLOR_WHITE, curses.COLOR_RED)    # PAUSED alert
 
         # Enable mouse
         try:
@@ -110,8 +111,53 @@ class MainScreen:
         else:
             self.stdscr.attroff(curses.A_BOLD | curses.A_REVERSE)
 
+        # Check if paused - show prominent alert
+        if self.time_tracker.is_paused():
+            paused_id = self.time_tracker.get_paused_project()
+            project = self.project_manager.get_project_by_id(paused_id) if paused_id else None
+            pause_duration = self.time_tracker.get_pause_duration()
+            pause_str = self.time_tracker.format_timedelta(pause_duration)
+            
+            if project:
+                project_name = project["name"][:15]
+                # Blinking effect using time
+                blink = int(datetime.now().timestamp() * 2) % 2 == 0
+                
+                # Line 1: Big PAUSED alert
+                alert_line1 = "⏸  CONTAGEM PAUSADA  ⏸"
+                # Line 2: Project info and pause duration
+                alert_line2 = f"{project_name} | Pausado há {pause_str}"
+                # Line 3: Instructions
+                alert_line3 = "Pressione ENTER para retomar"
+                
+                # Draw blinking alert box
+                if curses.has_colors():
+                    if blink:
+                        attr = curses.color_pair(11) | curses.A_BOLD | curses.A_BLINK
+                    else:
+                        attr = curses.color_pair(4) | curses.A_BOLD  # Red text
+                else:
+                    attr = curses.A_REVERSE | curses.A_BOLD | (curses.A_BLINK if blink else 0)
+                
+                # Center and draw alert lines
+                x1 = max(0, (w - len(alert_line1)) // 2)
+                x2 = max(0, (w - len(alert_line2)) // 2)
+                x3 = max(0, (w - len(alert_line3)) // 2)
+                
+                # Fill background for line 1
+                if curses.has_colors() and blink:
+                    bg_line = " " * min(w - 2, len(alert_line1) + 4)
+                    bg_x = max(0, (w - len(bg_line)) // 2)
+                    safe_addstr(self.stdscr, 1, bg_x, bg_line, curses.color_pair(11))
+                
+                safe_addstr(self.stdscr, 1, x1, alert_line1, attr)
+                safe_addstr(self.stdscr, 2, x2, alert_line2, 
+                          curses.color_pair(4) | curses.A_BOLD if curses.has_colors() else curses.A_BOLD)
+                safe_addstr(self.stdscr, 3, x3, alert_line3,
+                          curses.color_pair(3) if curses.has_colors() else curses.A_DIM)
+
         # Active project timer - compacto em uma linha
-        if self.time_tracker.is_tracking():
+        elif self.time_tracker.is_tracking():
             elapsed = self.time_tracker.get_current_elapsed()
             timer_str = self.time_tracker.format_timedelta(elapsed)
             project_id = self.time_tracker.get_current_project()

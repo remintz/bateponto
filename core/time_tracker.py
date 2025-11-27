@@ -150,6 +150,20 @@ class TimeTracker:
         """Check if currently tracking a project."""
         return self.current_project is not None
 
+    def is_paused(self) -> bool:
+        """Check if a project is currently paused (auto-pause from idle/sleep)."""
+        return self.paused_project is not None
+
+    def get_paused_project(self) -> Optional[str]:
+        """Get the ID of the paused project, if any."""
+        return self.paused_project
+
+    def get_pause_duration(self) -> timedelta:
+        """Get how long the project has been paused."""
+        if self.pause_start:
+            return datetime.now() - self.pause_start
+        return timedelta()
+
     def get_current_project(self) -> Optional[str]:
         """Get currently tracked project ID."""
         return self.current_project

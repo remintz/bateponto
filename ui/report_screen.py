@@ -41,13 +41,15 @@ class ReportScreen:
             ("Este Mês", 2),
             ("Últimos 7 dias", 3),
             ("Últimos 30 dias", 4),
-            ("Personalizado", 5)
+            ("Desde sempre", 5),
+            ("Personalizado", 6)
         ]
         self.selected_period = 0
         self.summary_data: List[Dict[str, Any]] = []
 
         self.start_date: Optional[datetime] = None
         self.end_date: Optional[datetime] = None
+        self.period_selector_end_y = 4  # Track where period selector ends
 
     def _get_period_dates(self, period_index: int) -> tuple:
         """Get start and end dates for selected period."""
@@ -83,7 +85,12 @@ class ReportScreen:
             start = today_start - timedelta(days=29)
             return start, today_end
 
-        elif period_index == 5:  # Personalizado
+        elif period_index == 5:  # Desde sempre
+            # Use a very old date as start (year 2000)
+            all_time_start = datetime(2000, 1, 1, 0, 0, 0)
+            return all_time_start, today_end
+
+        elif period_index == 6:  # Personalizado
             if self.start_date and self.end_date:
                 return self.start_date, self.end_date
             return today_start, today_end
@@ -110,13 +117,15 @@ class ReportScreen:
         h, w = self.stdscr.getmaxyx()
 
         label = "Período:"
-        safe_addstr(self.stdscr, 2, 5, label, curses.A_BOLD)
+        safe_addstr(self.stdscr, 2, 2, label, curses.A_BOLD)
 
-        x = 15
+        # Calculate available width for options
+        start_x = 2
+        max_x = w - 2
+        x = start_x
+        y = 3  # Start on next line after label
+
         for i, (period_name, _) in enumerate(self.period_options):
-            if x >= w - 2:
-                break
-
             if i == self.selected_period:
                 text = f"[{period_name}]"
                 attr = curses.A_REVERSE | curses.A_BOLD
@@ -124,15 +133,27 @@ class ReportScreen:
                 text = f" {period_name} "
                 attr = curses.A_NORMAL
 
-            safe_addstr(self.stdscr, 2, x, text, attr)
-            x += len(period_name) + 4
+            text_len = len(text)
+            
+            # Wrap to next line if doesn't fit
+            if x + text_len > max_x and x > start_x:
+                y += 1
+                x = start_x
+                if y >= h - 5:  # Don't overflow screen
+                    break
+
+            safe_addstr(self.stdscr, y, x, text, attr)
+            x += text_len + 1
+        
+        # Store where the period selector ends for other elements
+        self.period_selector_end_y = y + 1
 
     def draw_summary_table(self):
         """Draw summary table with project hours."""
         h, w = self.stdscr.getmaxyx()
 
-        start_y = 5
-        start_x = 5
+        start_y = self.period_selector_end_y + 1
+        start_x = 2
 
         # Verificar se tem espaço suficiente
         min_width = 60
@@ -141,40 +162,46 @@ class ReportScreen:
             safe_addstr(self.stdscr, h // 2, max(0, (w - len(msg)) // 2), msg)
             return
 
+        # Adjust table width based on screen width
+        table_width = min(w - 4, 58)
+        project_col_width = table_width - 18
+        hours_col_width = 15
+
         # Table header
-        safe_addstr(self.stdscr, start_y, start_x, "┌" + "─" * 40 + "┬" + "─" * 15 + "┐")
-        safe_addstr(self.stdscr, start_y + 1, start_x, "│ Projeto" + " " * 32 + "│ Horas Totais  │")
-        safe_addstr(self.stdscr, start_y + 2, start_x, "├" + "─" * 40 + "┼" + "─" * 15 + "┤")
+        safe_addstr(self.stdscr, start_y, start_x, "┌" + "─" * project_col_width + "┬" + "─" * hours_col_width + "┐")
+        header_proj = "Projeto"[:project_col_width - 2]
+        safe_addstr(self.stdscr, start_y + 1, start_x, f"│ {header_proj:<{project_col_width - 2}} │ Horas Totais  │")
+        safe_addstr(self.stdscr, start_y + 2, start_x, "├" + "─" * project_col_width + "┼" + "─" * hours_col_width + "┤")
 
         # Data rows
         row = start_y + 3
         total_hours = 0.0
 
         for item in self.summary_data:
-            if row >= h - 8:
+            if row >= h - 6:
                 break
 
-            project_name = item["project_name"][:38]
+            project_name = item["project_name"][:project_col_width - 3]
             hours = item["total_hours"]
             total_hours += hours
 
             hours_str = f"{int(hours):02d}:{int((hours % 1) * 60):02d}"
-            safe_addstr(self.stdscr, row, start_x, f"│ {project_name:<38} │ {hours_str:>13} │")
+            safe_addstr(self.stdscr, row, start_x, f"│ {project_name:<{project_col_width - 2}} │ {hours_str:>13} │")
             row += 1
 
         # Bottom border
-        if row < h - 6:
-            safe_addstr(self.stdscr, row, start_x, "├" + "─" * 40 + "┼" + "─" * 15 + "┤")
+        if row < h - 4:
+            safe_addstr(self.stdscr, row, start_x, "├" + "─" * project_col_width + "┼" + "─" * hours_col_width + "┤")
             row += 1
 
             # Total
             total_str = f"{int(total_hours):02d}:{int((total_hours % 1) * 60):02d}"
             safe_addstr(self.stdscr, row, start_x,
-                       f"│ {'TOTAL':<38} │ {total_str:>13} │",
+                       f"│ {'TOTAL':<{project_col_width - 2}} │ {total_str:>13} │",
                        curses.A_BOLD)
             row += 1
 
-            safe_addstr(self.stdscr, row, start_x, "└" + "─" * 40 + "┴" + "─" * 15 + "┘")
+            safe_addstr(self.stdscr, row, start_x, "└" + "─" * project_col_width + "┴" + "─" * hours_col_width + "┘")
 
     def draw_bar_chart(self):
         """Draw simple ASCII bar chart."""
