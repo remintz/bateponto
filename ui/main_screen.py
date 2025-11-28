@@ -79,7 +79,7 @@ class MainScreen:
 
     def refresh_projects(self):
         """Refresh project list and times."""
-        self.projects = self.project_manager.get_active_projects(limit=5)
+        self.projects = self.project_manager.get_active_projects(limit=6)
 
         # Get today's times for all projects
         project_ids = [p["id"] for p in self.projects]
@@ -238,7 +238,7 @@ class MainScreen:
         start_y = self.header_height + 2
         start_x = 5
 
-        # Calculate layout (2 columns for 5 projects, 3 in first column)
+        # Calculate layout (2 columns for 6 projects, 3 in each column)
         col_width = self.button_width + 5
 
         for i, project in enumerate(self.projects):
