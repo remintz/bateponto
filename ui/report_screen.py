@@ -303,11 +303,23 @@ class ReportScreen:
         return None
 
     def export_report(self):
-        """Export current report to CSV."""
+        """Export current report to CSV with daily breakdown."""
         try:
             start_date, end_date = self._get_period_dates(self.selected_period)
-            filepath = self.exporter.export_summary_to_csv(
-                self.summary_data,
+
+            # Get entries for the date range
+            entries = self.time_tracker.storage.get_entries_by_date_range(
+                start_date, end_date
+            )
+
+            # Build project map
+            projects = self.project_manager.get_all_projects()
+            projects_map = {p["id"]: p["name"] for p in projects}
+
+            # Export daily breakdown
+            filepath = self.exporter.export_daily_breakdown_to_csv(
+                entries,
+                projects_map,
                 start_date,
                 end_date
             )
