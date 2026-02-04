@@ -100,7 +100,36 @@ class ReportScreen:
     def refresh_data(self):
         """Refresh summary data for selected period."""
         start_date, end_date = self._get_period_dates(self.selected_period)
-        self.summary_data = self.time_tracker.get_project_summary(start_date, end_date)
+
+        # Get projects and calculate breakdown for each
+        projects = self.time_tracker.storage.get_projects()
+        self.summary_data = []
+
+        for project in projects:
+            project_id = project["id"]
+
+            # Get breakdown: raw time and adjustments
+            raw_time, adjustment_minutes = self.time_tracker.calculate_project_time_breakdown(
+                project_id, start_date, end_date
+            )
+
+            # Raw hours (only start/stop time, no adjustments)
+            raw_hours = raw_time.total_seconds() / 3600
+
+            # Final hours = raw + adjustments
+            final_hours = raw_hours + (adjustment_minutes / 60.0)
+
+            self.summary_data.append({
+                "project_id": project_id,
+                "project_name": project["name"],
+                "raw_hours": raw_hours,
+                "adjustment_minutes": adjustment_minutes,
+                "total_hours": final_hours,
+                "total_time": raw_time + timedelta(minutes=adjustment_minutes)
+            })
+
+        # Sort by total time descending
+        self.summary_data.sort(key=lambda x: x["total_hours"], reverse=True)
 
     def draw_header(self):
         """Draw header."""
@@ -149,59 +178,100 @@ class ReportScreen:
         self.period_selector_end_y = y + 1
 
     def draw_summary_table(self):
-        """Draw summary table with project hours."""
+        """Draw summary table with project hours, adjustments, and final hours."""
         h, w = self.stdscr.getmaxyx()
 
         start_y = self.period_selector_end_y + 1
         start_x = 2
 
         # Verificar se tem espaço suficiente
-        min_width = 60
+        min_width = 78
         if w < min_width or h < 10:
             msg = "Terminal muito pequeno para relatórios"
             safe_addstr(self.stdscr, h // 2, max(0, (w - len(msg)) // 2), msg)
             return
 
-        # Adjust table width based on screen width
-        table_width = min(w - 4, 58)
-        project_col_width = table_width - 18
-        hours_col_width = 15
+        # Column widths
+        project_col = 20
+        hours_col = 12
+        adj_col = 10
+        final_col = 12
 
         # Table header
-        safe_addstr(self.stdscr, start_y, start_x, "┌" + "─" * project_col_width + "┬" + "─" * hours_col_width + "┐")
-        header_proj = "Projeto"[:project_col_width - 2]
-        safe_addstr(self.stdscr, start_y + 1, start_x, f"│ {header_proj:<{project_col_width - 2}} │ Horas Totais  │")
-        safe_addstr(self.stdscr, start_y + 2, start_x, "├" + "─" * project_col_width + "┼" + "─" * hours_col_width + "┤")
+        header_line = "┌" + "─" * project_col + "┬" + "─" * hours_col + "┬" + "─" * adj_col + "┬" + "─" * final_col + "┐"
+        safe_addstr(self.stdscr, start_y, start_x, header_line)
+
+        header_text = f"│ {'Projeto':<{project_col - 2}} │ {'Trabalhado':^{hours_col - 2}} │ {'Ajustes':^{adj_col - 2}} │ {'Final':^{final_col - 2}} │"
+        safe_addstr(self.stdscr, start_y + 1, start_x, header_text, curses.A_BOLD)
+
+        sep_line = "├" + "─" * project_col + "┼" + "─" * hours_col + "┼" + "─" * adj_col + "┼" + "─" * final_col + "┤"
+        safe_addstr(self.stdscr, start_y + 2, start_x, sep_line)
 
         # Data rows
         row = start_y + 3
-        total_hours = 0.0
+        total_raw = 0.0
+        total_adj = 0.0
+        total_final = 0.0
 
         for item in self.summary_data:
             if row >= h - 6:
                 break
 
-            project_name = item["project_name"][:project_col_width - 3]
-            hours = item["total_hours"]
-            total_hours += hours
+            project_name = item["project_name"][:project_col - 2]
+            raw_hours = item.get("raw_hours", item["total_hours"])
+            adj_minutes = item.get("adjustment_minutes", 0)
+            final_hours = item["total_hours"]
 
-            hours_str = f"{int(hours):02d}:{int((hours % 1) * 60):02d}"
-            safe_addstr(self.stdscr, row, start_x, f"│ {project_name:<{project_col_width - 2}} │ {hours_str:>13} │")
+            total_raw += raw_hours
+            total_adj += adj_minutes
+            total_final += final_hours
+
+            # Format hours
+            raw_str = self._format_hours_display(raw_hours)
+            adj_str = self._format_adjustment(adj_minutes)
+            final_str = self._format_hours_display(final_hours)
+
+            row_text = f"│ {project_name:<{project_col - 2}} │ {raw_str:>{hours_col - 2}} │ {adj_str:>{adj_col - 2}} │ {final_str:>{final_col - 2}} │"
+            safe_addstr(self.stdscr, row, start_x, row_text)
             row += 1
 
         # Bottom border
         if row < h - 4:
-            safe_addstr(self.stdscr, row, start_x, "├" + "─" * project_col_width + "┼" + "─" * hours_col_width + "┤")
+            safe_addstr(self.stdscr, row, start_x, sep_line)
             row += 1
 
-            # Total
-            total_str = f"{int(total_hours):02d}:{int((total_hours % 1) * 60):02d}"
-            safe_addstr(self.stdscr, row, start_x,
-                       f"│ {'TOTAL':<{project_col_width - 2}} │ {total_str:>13} │",
-                       curses.A_BOLD)
+            # Total row
+            total_raw_str = self._format_hours_display(total_raw)
+            total_adj_str = self._format_adjustment(total_adj)
+            total_final_str = self._format_hours_display(total_final)
+
+            total_text = f"│ {'TOTAL':<{project_col - 2}} │ {total_raw_str:>{hours_col - 2}} │ {total_adj_str:>{adj_col - 2}} │ {total_final_str:>{final_col - 2}} │"
+            safe_addstr(self.stdscr, row, start_x, total_text, curses.A_BOLD)
             row += 1
 
-            safe_addstr(self.stdscr, row, start_x, "└" + "─" * project_col_width + "┴" + "─" * hours_col_width + "┘")
+            bottom_line = "└" + "─" * project_col + "┴" + "─" * hours_col + "┴" + "─" * adj_col + "┴" + "─" * final_col + "┘"
+            safe_addstr(self.stdscr, row, start_x, bottom_line)
+
+    def _format_hours_display(self, hours: float) -> str:
+        """Format hours as HH:MM."""
+        if hours < 0:
+            sign = "-"
+            hours = abs(hours)
+        else:
+            sign = ""
+        h = int(hours)
+        m = int((hours % 1) * 60)
+        return f"{sign}{h:02d}:{m:02d}"
+
+    def _format_adjustment(self, minutes: float) -> str:
+        """Format adjustment minutes with sign."""
+        minutes = int(minutes)
+        if minutes == 0:
+            return "0"
+        elif minutes > 0:
+            return f"+{minutes}"
+        else:
+            return str(minutes)
 
     def draw_bar_chart(self):
         """Draw simple ASCII bar chart."""

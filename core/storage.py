@@ -149,3 +149,4 @@ class Storage:
         """Get entries for a project within a date range."""
         entries = self.get_entries_by_date_range(start_date, end_date)
         return [e for e in entries if e.get("project_id") == project_id]
+

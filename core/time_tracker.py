@@ -174,34 +174,70 @@ class TimeTracker:
         start_date: datetime,
         end_date: datetime
     ) -> timedelta:
-        """Calculate total time for a project in a date range."""
-        entries = self.storage.get_entries_by_project_and_date(
-            project_id,
-            start_date,
-            end_date
+        """Calculate total time for a project in a date range (includes all adjustments)."""
+        raw_time, adjustment_minutes = self.calculate_project_time_breakdown(
+            project_id, start_date, end_date
         )
+        return raw_time + timedelta(minutes=adjustment_minutes)
 
-        total_time = timedelta()
+    def calculate_project_time_breakdown(
+        self,
+        project_id: str,
+        start_date: datetime,
+        end_date: datetime
+    ) -> tuple:
+        """Calculate time breakdown: (raw_time, adjustment_minutes).
+
+        Sessions that span midnight are split at day boundaries.
+        """
+        # Get ALL entries for this project (not just in date range) to handle sessions spanning dates
+        all_entries = self.storage.get_entries_by_project(project_id)
+        all_entries.sort(key=lambda e: e["timestamp"])
+
+        raw_time = timedelta()
+        adjustment_minutes = 0
         last_start = None
 
-        for entry in entries:
+        for entry in all_entries:
             timestamp = datetime.fromisoformat(entry["timestamp"])
 
             if entry["event"] == "start":
                 last_start = timestamp
             elif entry["event"] in ["stop", "auto_pause"] and last_start:
-                total_time += timestamp - last_start
+                # Calculate time, splitting at midnight if needed
+                raw_time += self._calculate_time_in_range(
+                    last_start, timestamp, start_date, end_date
+                )
                 last_start = None
             elif entry["event"] in ["adjustment", "pause_adjustment"]:
-                # Add or subtract adjustment time
-                adjustment_minutes = entry.get("minutes", 0)
-                total_time += timedelta(minutes=adjustment_minutes)
+                # Only count adjustments within date range
+                if start_date <= timestamp <= end_date:
+                    adjustment_minutes += entry.get("minutes", 0)
 
         # If project is still running and it's the current project
         if last_start and self.current_project == project_id:
-            total_time += datetime.now() - last_start
+            raw_time += self._calculate_time_in_range(
+                last_start, datetime.now(), start_date, end_date
+            )
 
-        return total_time
+        return raw_time, adjustment_minutes
+
+    def _calculate_time_in_range(
+        self,
+        session_start: datetime,
+        session_end: datetime,
+        range_start: datetime,
+        range_end: datetime
+    ) -> timedelta:
+        """Calculate how much of a session falls within the given date range."""
+        # Clip session to range
+        effective_start = max(session_start, range_start)
+        effective_end = min(session_end, range_end)
+
+        if effective_start >= effective_end:
+            return timedelta()
+
+        return effective_end - effective_start
 
     def get_today_time(self, project_id: str) -> timedelta:
         """Get time worked on project today."""
